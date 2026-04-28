@@ -2,26 +2,32 @@
 <html>
 
 <head>
-<title>Neurosurgery POD Tracker</title>
+<title>Neurosurgery Post-Op Tracker</title>
 
 <style>
 
 body{
 font-family:Arial;
-margin:40px;
+margin:20px;
 background:#f4f6f9;
+font-size:18px;
+}
+
+h1{
+margin-bottom:10px;
 }
 
 input,select,button{
-padding:8px;
+padding:10px;
 margin:5px;
+font-size:16px;
 }
 
 button{
 background:#007BFF;
 color:white;
 border:none;
-border-radius:4px;
+border-radius:5px;
 cursor:pointer;
 }
 
@@ -31,10 +37,20 @@ background:#dc3545;
 
 .patient{
 background:white;
-padding:12px;
+padding:14px;
 margin-top:10px;
-border-radius:6px;
+border-radius:8px;
 box-shadow:0px 2px 6px rgba(0,0,0,0.1);
+}
+
+.pod{
+font-size:24px;
+font-weight:bold;
+background:#e6f0ff;
+padding:4px 10px;
+border-radius:6px;
+display:inline-block;
+margin-top:5px;
 }
 
 .dressing{
@@ -109,12 +125,12 @@ return Math.floor((today-surgeryDate)/(1000*60*60*24));
 
 function addPatient(){
 
-let name=document.getElementById("name").value;
+let name=document.getElementById("name").value.trim();
 let surgery=document.getElementById("surgery").value;
 let drain=document.getElementById("drain").value;
 
 if(name=="" || surgery==""){
-alert("Enter patient details");
+alert("Enter patient name and surgery date");
 return;
 }
 
@@ -122,6 +138,13 @@ patientsRef.push({
 name:name,
 date:surgery,
 drain:drain
+})
+.then(()=>{
+console.log("Patient saved");
+})
+.catch((error)=>{
+alert("Error saving patient. Please try again.");
+console.error(error);
 });
 
 document.getElementById("name").value="";
@@ -132,7 +155,9 @@ document.getElementById("surgery").value="";
 
 function removePatient(id){
 
+if(confirm("Discharge this patient?")){
 patientsRef.child(id).remove();
+}
 
 }
 
@@ -143,10 +168,18 @@ let container=document.getElementById("patientList");
 
 container.innerHTML="";
 
-snapshot.forEach((child)=>{
+let patients=[];
 
-let patient=child.val();
-let id=child.key;
+snapshot.forEach((child)=>{
+patients.push({
+id:child.key,
+...child.val()
+});
+});
+
+patients.sort((a,b)=>calculatePOD(a.date)-calculatePOD(b.date));
+
+patients.forEach((patient)=>{
 
 let pod=calculatePOD(patient.date);
 
@@ -165,10 +198,10 @@ div.classList.add("suture");
 div.innerHTML=
 
 "<b>"+patient.name+"</b>"+
-"<br>POD: "+pod+
+"<br><span class='pod'>POD "+pod+"</span>"+
 "<br>Surgery Date: "+patient.date+
 "<br>Drain: "+patient.drain+
-"<br><button class='remove' onclick='removePatient(\""+id+"\")'>Discharge</button>";
+"<br><button class='remove' onclick='removePatient(\""+patient.id+"\")'>Discharge</button>";
 
 container.appendChild(div);
 
